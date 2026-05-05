@@ -4,3 +4,7 @@ __pycache__/
 .venv/
 venv/
 *.log
+
+# Generated reports (don't track)
+reports/*.html
+reports/*.txt
