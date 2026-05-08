@@ -1,21 +1,14 @@
 """
-FINANCIAL ALERT SYSTEM - DAY 2
-Fraud Detection with HTML Reports
+FINANCIAL ALERT SYSTEM - DAY 3
+Fraud Detection with HTML Reports and Charts
 Author: Sowmya Kothakapu
 """
 
 import csv
 import os
 from datetime import datetime
-
-# Try to import jinja2 for HTML reports
-try:
-    from jinja2 import Environment, FileSystemLoader
-    JINJA_AVAILABLE = True
-    print("✅ Jinja2 loaded - HTML reports enabled")
-except ImportError:
-    JINJA_AVAILABLE = False
-    print("⚠️ Jinja2 not installed. Run: pip install jinja2")
+from jinja2 import Environment, FileSystemLoader
+from chart_generator import generate_fraud_charts
 
 # ============================================
 # CONFIGURATION
@@ -34,6 +27,7 @@ LATE_NIGHT_END = 5
 
 # HTML report setting
 GENERATE_HTML = True
+JINJA_AVAILABLE = True
 
 # ============================================
 # DATA LOADING
@@ -133,8 +127,8 @@ def generate_text_report(suspicious, total_transactions, output_file):
 # HTML REPORT GENERATION
 # ============================================
 
-def generate_html_report(suspicious, total_transactions, output_file):
-    """Creates a beautiful HTML report"""
+def generate_html_report(suspicious, total_transactions, output_file, chart_path=None):
+    """Creates a beautiful HTML report with charts"""
     
     if not JINJA_AVAILABLE:
         print("⚠️ HTML report skipped - install jinja2 first")
@@ -147,6 +141,7 @@ def generate_html_report(suspicious, total_transactions, output_file):
     
     # Calculate totals
     total_flagged = sum(t['amount'] for t in suspicious)
+    fraud_rate = (len(suspicious) / total_transactions * 100) if total_transactions > 0 else 0
     
     # Prepare data for template
     template_data = {
@@ -154,7 +149,9 @@ def generate_html_report(suspicious, total_transactions, output_file):
         'total_transactions': total_transactions,
         'suspicious_count': len(suspicious),
         'total_flagged_amount': f"{total_flagged:,.2f}",
-        'suspicious': suspicious
+        'fraud_rate': f"{fraud_rate:.2f}",
+        'suspicious': suspicious,
+        'chart_path': os.path.basename(chart_path) if chart_path else None
     }
     
     # Load and render template
@@ -179,8 +176,8 @@ def generate_html_report(suspicious, total_transactions, output_file):
 
 def main():
     print("\n" + "="*50)
-    print("💰 FINANCIAL ALERT SYSTEM - DAY 2")
-    print("Fraud Detection with HTML Reports")
+    print("💰 FINANCIAL ALERT SYSTEM - DAY 3")
+    print("Fraud Detection with HTML Reports and Charts")
     print("="*50 + "\n")
     
     # Load data
@@ -193,12 +190,20 @@ def main():
     # Detect suspicious patterns
     suspicious = detect_suspicious(transactions)
     
-    # Generate text report (always)
+    # Generate charts
+    print("\n📊 Generating fraud analysis charts...")
+    try:
+        chart_path = generate_fraud_charts(transactions, suspicious, REPORTS_FOLDER)
+    except Exception as e:
+        print(f"⚠️ Chart generation skipped: {e}")
+        chart_path = None
+    
+    # Generate text report
     generate_text_report(suspicious, len(transactions), TEXT_REPORT_NAME)
     
-    # Generate HTML report (if enabled)
+    # Generate HTML report
     if GENERATE_HTML:
-        generate_html_report(suspicious, len(transactions), HTML_REPORT_NAME)
+        generate_html_report(suspicious, len(transactions), HTML_REPORT_NAME, chart_path)
     
     # Print summary
     print("\n" + "="*50)
@@ -211,10 +216,9 @@ def main():
     print(f"Total flagged amount: ${total_flagged:,.2f}")
     print("="*50 + "\n")
     
-    print("🎉 Day 2 complete!")
+    print("🎉 Day 3 complete!")
     print("   📄 Text report saved")
-    if JINJA_AVAILABLE and GENERATE_HTML:
-        print("   🌐 HTML report saved - open it in your browser!")
+    print("   🌐 HTML report saved with charts")
 
 if __name__ == "__main__":
     main()
